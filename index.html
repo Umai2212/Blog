@@ -1,0 +1,960 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adventurer Divine Blog</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            height: clamp(60px, 10vw, 80px);
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            width: 100%;
+            max-width: 1440px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 clamp(10px, 5vw, 20px);
+        }
+
+        .logo {
+            font-size: clamp(18px, 5vw, 24px);
+            font-weight: 700;
+            color: #2e7d32;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: clamp(10px, 3vw, 15px);
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 600;
+            font-size: clamp(12px, 3vw, 16px);
+        }
+
+        .nav-menu a:hover {
+            color: #2e7d32;
+        }
+
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            min-width: 160px;
+            z-index: 1;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .dropdown-content a {
+            display: block;
+            padding: 10px;
+            font-size: clamp(12px, 3vw, 14px);
+        }
+
+        .cta-button {
+            background: #2e7d32;
+            color: #fff;
+            padding: clamp(6px, 2vw, 8px) clamp(12px, 3vw, 16px);
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: clamp(12px, 3vw, 16px);
+        }
+
+        .hamburger {
+            display: none;
+            font-size: clamp(20px, 5vw, 24px);
+            cursor: pointer;
+        }
+
+        /* Hero Section */
+        .hero {
+            height: clamp(300px, 60vw, 450px);
+            background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e') no-repeat center/cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.3));
+        }
+
+        .hero-content {
+            position: relative;
+            color: #fff;
+            padding: clamp(20px, 5vw, 30px);
+            max-width: 900px;
+        }
+
+        .hero-content h1 {
+            font-size: clamp(24px, 6vw, 40px);
+            font-weight: 700;
+            margin-bottom: clamp(10px, 3vw, 15px);
+        }
+
+        .hero-content p {
+            font-size: clamp(14px, 4vw, 18px);
+            margin-bottom: clamp(15px, 4vw, 20px);
+        }
+
+        .hero-content .cta {
+            background: #2e7d32;
+            color: #fff;
+            padding: clamp(8px, 2vw, 10px) clamp(15px, 4vw, 20px);
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: clamp(12px, 3vw, 16px);
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            max-width: 1440px;
+            margin: clamp(20px, 5vw, 40px) auto;
+            padding: clamp(15px, 4vw, 20px) clamp(10px, 5vw, 20px);
+            display: flex;
+            flex-wrap: wrap;
+            gap: clamp(10px, 3vw, 15px);
+            justify-content: center;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .filter-bar select,
+        .filter-bar input {
+            padding: clamp(8px, 2vw, 10px);
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: clamp(12px, 3vw, 16px);
+            width: clamp(150px, 25%, 200px);
+        }
+
+        .filter-bar button {
+            background: #2e7d32;
+            color: #fff;
+            padding: clamp(8px, 2vw, 10px) clamp(15px, 4vw, 20px);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: clamp(12px, 3vw, 16px);
+        }
+
+        .filter-bar button.reset {
+            background: #777;
+        }
+
+        /* Featured Post */
+        .featured-post {
+            max-width: 1440px;
+            margin: clamp(20px, 5vw, 40px) auto;
+            padding: 0 clamp(10px, 5vw, 20px);
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .featured-post-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: clamp(20px, 5vw, 30px);
+            padding: clamp(20px, 5vw, 30px);
+        }
+
+        .featured-post-text {
+            flex: 1;
+            min-width: clamp(300px, 50%, 500px);
+        }
+
+        .featured-post-text h2 {
+            font-size: clamp(18px, 5vw, 28px);
+            color: #2e7d32;
+            margin-bottom: clamp(10px, 3vw, 15px);
+        }
+
+        .featured-post-text p {
+            font-size: clamp(12px, 3vw, 16px);
+            line-height: 1.6;
+            margin-bottom: clamp(10px, 3vw, 15px);
+            color: #333;
+        }
+
+        .featured-post-text .meta {
+            font-size: clamp(10px, 3vw, 12px);
+            color: #777;
+            margin-bottom: clamp(10px, 3vw, 15px);
+        }
+
+        .featured-post-text .cta {
+            background: #2e7d32;
+            color: #fff;
+            padding: clamp(8px, 2vw, 10px) clamp(15px, 4vw, 20px);
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: clamp(12px, 3vw, 16px);
+        }
+
+        .featured-post-gallery {
+            flex: 1;
+            min-width: clamp(300px, 50%, 500px);
+            display: flex;
+            flex-wrap: wrap;
+            gap: clamp(10px, 3vw, 15px);
+        }
+
+        .featured-post-gallery img {
+            width: clamp(150px, 45%, 200px);
+            height: 150px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        /* Content Wrapper */
+        .content-wrapper {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: clamp(20px, 5vw, 40px) clamp(10px, 5vw, 20px);
+            display: flex;
+            flex-wrap: wrap;
+            gap: clamp(20px, 5vw, 30px);
+            align-items: flex-start;
+        }
+
+        .main-content {
+            flex: 3;
+            min-width: clamp(300px, 60%, 800px);
+            max-width: 800px;
+        }
+
+        .sidebar {
+            flex: 1;
+            min-width: clamp(250px, 30%, 350px);
+            max-width: 350px;
+            background: #fff;
+            border-radius: 10px;
+            padding: clamp(20px, 5vw, 30px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .blog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: clamp(15px, 4vw, 20px);
+        }
+
+        .blog-card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .blog-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .blog-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+
+        .blog-card-content {
+            padding: clamp(10px, 3vw, 15px);
+        }
+
+        .blog-card h3 {
+            font-size: clamp(14px, 4vw, 18px);
+            color: #2e7d32;
+            margin-bottom: clamp(8px, 2vw, 10px);
+        }
+
+        .blog-card p {
+            font-size: clamp(12px, 3vw, 14px);
+            color: #333;
+            margin-bottom: clamp(10px, 3vw, 15px);
+            line-height: 1.5;
+        }
+
+        .blog-card .meta {
+            font-size: clamp(10px, 3vw, 12px);
+            color: #777;
+            margin-bottom: clamp(10px, 3vw, 15px);
+        }
+
+        .blog-card .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: clamp(5px, 2vw, 8px);
+            margin-bottom: clamp(10px, 3vw, 15px);
+        }
+
+        .blog-card .tags a {
+            background: #f0f0f0;
+            color: #333;
+            padding: clamp(4px, 1vw, 6px) clamp(8px, 2vw, 10px);
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: clamp(10px, 3vw, 12px);
+        }
+
+        .blog-card .tags a:hover {
+            background: #2e7d32;
+            color: #fff;
+        }
+
+        .blog-card a.cta {
+            display: inline-block;
+            background: #2e7d32;
+            color: #fff;
+            padding: clamp(6px, 2vw, 8px) clamp(12px, 3vw, 16px);
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: clamp(12px, 3vw, 14px);
+        }
+
+        .sidebar h3 {
+            font-size: clamp(16px, 4vw, 20px);
+            color: #2e7d32;
+            margin-bottom: clamp(10px, 3vw, 15px);
+        }
+
+        .sidebar .related-post {
+            margin-bottom: clamp(15px, 4vw, 20px);
+        }
+
+        .sidebar .related-post img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .sidebar .related-post a {
+            font-size: clamp(12px, 3vw, 14px);
+            color: #333;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .sidebar .related-post a:hover {
+            color: #2e7d32;
+        }
+
+        .sidebar .related-post p {
+            font-size: clamp(10px, 3vw, 12px);
+            color: #333;
+        }
+
+        .sidebar .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: clamp(8px, 2vw, 10px);
+            margin-top: clamp(15px, 4vw, 20px);
+            margin-bottom: clamp(20px, 5vw, 30px);
+        }
+
+        .sidebar .tags a {
+            background: #f0f0f0;
+            color: #333;
+            padding: clamp(5px, 2vw, 8px) clamp(10px, 3vw, 12px);
+            border-radius: 15px;
+            text-decoration: none;
+            font-size: clamp(10px, 3vw, 12px);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar .tags a:hover {
+            background: #2e7d32;
+            color: #fff;
+        }
+
+        .sidebar .author-bio {
+            text-align: center;
+            margin-bottom: clamp(20px, 5vw, 30px);
+        }
+
+        .sidebar .author-bio img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-bottom: clamp(10px, 3vw, 15px);
+        }
+
+        .sidebar .author-bio p {
+            font-size: clamp(12px, 3vw, 14px);
+            color: #333;
+        }
+
+        .sidebar .testimonials {
+            margin-top: clamp(20px, 5vw, 30px);
+        }
+
+        .sidebar .testimonial {
+            font-size: clamp(12px, 3vw, 14px);
+            color: #333;
+            margin-bottom: clamp(15px, 4vw, 20px);
+            font-style: italic;
+        }
+
+        .sidebar .testimonial .meta {
+            font-size: clamp(10px, 3vw, 12px);
+            color: #777;
+        }
+
+        /* Load More */
+        .load-more {
+            max-width: 1440px;
+            margin: clamp(20px, 5vw, 40px) auto;
+            padding: 0 clamp(10px, 5vw, 20px);
+            text-align: center;
+        }
+
+        .load-more button {
+            background: #2e7d32;
+            color: #fff;
+            padding: clamp(8px, 2vw, 10px) clamp(15px, 4vw, 20px);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: clamp(12px, 3vw, 16px);
+        }
+
+        /* Newsletter Signup */
+        .newsletter {
+            padding: clamp(30px, 10vw, 60px) clamp(10px, 5vw, 20px);
+            background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e') no-repeat center/cover;
+            position: relative;
+            color: #fff;
+            text-align: center;
+        }
+
+        .newsletter::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(46, 125, 50, 0.8);
+        }
+
+        .newsletter-content {
+            position: relative;
+        }
+
+        .newsletter h2 {
+            font-size: clamp(20px, 5vw, 36px);
+            margin-bottom: clamp(15px, 4vw, 20px);
+        }
+
+        .newsletter form {
+            display: flex;
+            justify-content: center;
+            gap: clamp(8px, 2vw, 10px);
+            margin-bottom: clamp(15px, 4vw, 20px);
+            flex-wrap: wrap;
+        }
+
+        .newsletter input[type="email"] {
+            padding: clamp(8px, 2vw, 10px);
+            border: none;
+            border-radius: 5px;
+            width: clamp(180px, 80%, 300px);
+        }
+
+        .newsletter button {
+            background: #fff;
+            color: #2e7d32;
+            padding: clamp(8px, 2vw, 10px) clamp(15px, 4vw, 20px);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: clamp(12px, 3vw, 16px);
+        }
+
+        /* Footer */
+        .footer {
+            background: #424242;
+            color: #fff;
+            padding: clamp(20px, 8vw, 40px) clamp(10px, 5vw, 20px);
+            text-align: center;
+        }
+
+        .footer-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: clamp(15px, 5vw, 20px);
+        }
+
+        .footer-column {
+            flex: 1;
+            min-width: clamp(120px, 40%, 200px);
+        }
+
+        .footer-column h3 {
+            font-size: clamp(14px, 4vw, 20px);
+            margin-bottom: clamp(15px, 4vw, 20px);
+        }
+
+        .footer-column a {
+            color: #fff;
+            text-decoration: none;
+            display: block;
+            margin-bottom: clamp(8px, 2vw, 10px);
+            font-size: clamp(12px, 3vw, 16px);
+        }
+
+        .social-icons a {
+            color: #fff;
+            margin: 0 clamp(8px, 2vw, 10px);
+            font-size: clamp(16px, 5vw, 24px);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+                position: absolute;
+                top: clamp(60px, 10vw, 80px);
+                left: 0;
+                width: 100%;
+                background: #fff;
+                flex-direction: column;
+                padding: clamp(15px, 5vw, 20px);
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            }
+
+            .nav-menu.active {
+                display: flex;
+            }
+
+            .hamburger {
+                display: block;
+            }
+
+            .dropdown-content {
+                position: static;
+                box-shadow: none;
+            }
+
+            .cta-button {
+                margin-left: auto;
+            }
+
+            .content-wrapper,
+            .featured-post-content {
+                flex-direction: column;
+                gap: clamp(15px, 4vw, 20px);
+            }
+
+            .main-content,
+            .sidebar,
+            .featured-post-text,
+            .featured-post-gallery {
+                min-width: 100%;
+                max-width: 100%;
+            }
+
+            .filter-bar select,
+            .filter-bar input {
+                width: 100%;
+            }
+
+            .featured-post-gallery img {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero {
+                height: clamp(200px, 50vw, 300px);
+            }
+
+            .hero-content h1 {
+                font-size: clamp(18px, 8vw, 28px);
+            }
+
+            .hero-content p,
+            .hero-content .cta {
+                font-size: clamp(10px, 4vw, 16px);
+            }
+
+            .blog-card h3 {
+                font-size: clamp(12px, 4vw, 16px);
+            }
+
+            .blog-card p,
+            .blog-card .meta,
+            .blog-card .tags a {
+                font-size: clamp(10px, 3vw, 12px);
+            }
+
+            .sidebar .related-post img {
+                height: 80px;
+            }
+
+            .sidebar .author-bio img {
+                width: 60px;
+                height: 60px;
+            }
+
+            .featured-post-text h2 {
+                font-size: clamp(16px, 6vw, 24px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">Adventurer Divine</div>
+            <div class="hamburger">☰</div>
+            <div class="nav-menu">
+                <a href="#">Home</a>
+                <div class="dropdown">
+                    <a href="#">Destinations ⌄</a>
+                    <div class="dropdown-content">
+                        <a href="#">Colorado</a>
+                        <a href="#">Utah</a>
+                        <a href="#">California</a>
+                    </div>
+                </div>
+                <a href="#">Hiking Routes</a>
+                <a href="#">Gear</a>
+                <a href="#">Tips & Guides</a>
+                <a href="#">Blog</a>
+            </div>
+            <a href="#" class="cta-button">Subscribe</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Adventurer Divine Blog</h1>
+            <p>Welcome to our blog, your source for hiking inspiration, gear reviews, and expert tips for outdoor adventures. From breathtaking trail stories to practical advice for beginners and seasoned hikers, our posts are crafted to fuel your passion for the outdoors. Join our community and explore the best of hiking across the USA!</p>
+            <a href="#blog" class="cta">Browse Posts</a>
+        </div>
+    </section>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <select>
+            <option value="">All Categories</option>
+            <option value="hiking-tips">Hiking Tips</option>
+            <option value="gear-reviews">Gear Reviews</option>
+            <option value="trail-stories">Trail Stories</option>
+        </select>
+        <select>
+            <option value="">All Dates</option>
+            <option value="2025">2025</option>
+            <option value="2024">2024</option>
+        </select>
+        <select>
+            <option value="">All Tags</option>
+            <option value="beginner">Beginner</option>
+            <option value="advanced">Advanced</option>
+            <option value="gear">Gear</option>
+        </select>
+        <input type="text" placeholder="Search posts...">
+        <button>Filter</button>
+        <button class="reset">Reset</button>
+    </div>
+
+    <!-- Featured Post -->
+    <section class="featured-post">
+        <div class="featured-post-content">
+            <div class="featured-post-text">
+                <h2>Featured Post: Conquering Angels Landing</h2>
+                <p class="meta">Drakshayani | August 1, 2025</p>
+                <p>Angels Landing in Zion National Park is a bucket-list hike with thrilling switchbacks and jaw-dropping views. This post dives into our experience tackling the steep ascent, sharing tips on preparation, safety, and what to expect at the summit.</p>
+                <p>From gear recommendations to navigating the narrow spine, our guide covers everything you need for this iconic adventure. Check out our gallery for stunning visuals of Zion’s red rock cliffs and learn why this trail is a must-do for hikers.</p>
+                <a href="#" class="cta">Read Post</a>
+            </div>
+            <div class="featured-post-gallery">
+                <img src="https://images.unsplash.com/photo-1505826758259-7a03c4f86d91" alt="Angels Landing">
+                <img src="https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0" alt="Zion View">
+            </div>
+        </div>
+    </section>
+
+    <!-- Content Wrapper -->
+    <div class="content-wrapper" id="blog">
+        <div class="main-content">
+            <div class="blog-grid">
+                <div class="blog-card">
+                    <img src="https://images.unsplash.com/photo-1465189684280-6a0316a3e23f" alt="Yosemite Tips">
+                    <div class="blog-card-content">
+                        <h3>Top 5 Tips for Hiking Yosemite</h3>
+                        <p class="meta">Drakshayani | July 25, 2025</p>
+                        <p>Planning a Yosemite adventure? Discover essential tips for navigating its iconic trails, from packing smart to avoiding crowds.</p>
+                        <div class="tags">
+                            <a href="#">Hiking Tips</a>
+                            <a href="#">Beginner</a>
+                        </div>
+                        <a href="#" class="cta">Read Post</a>
+                    </div>
+                </div>
+                <div class="blog-card">
+                    <img src="https://images.unsplash.com/photo-1517824806704-9040b037703b" alt="Gear Review">
+                    <div class="blog-card-content">
+                        <h3>Osprey Atmos AG 65 Review</h3>
+                        <p class="meta">Drakshayani | July 15, 2025</p>
+                        <p>We tested the Osprey Atmos AG 65 on a multi-day hike. Learn why its comfort and durability make it a top choice.</p>
+                        <div class="tags">
+                            <a href="#">Gear Reviews</a>
+                            <a href="#">Backpacks</a>
+                        </div>
+                        <a href="#" class="cta">Read Post</a>
+                    </div>
+                </div>
+                <div class="blog-card">
+                    <img src="https://images.unsplash.com/photo-1472214103451-9374bd1c798e" alt="Colorado Trails">
+                    <div class="blog-card-content">
+                        <h3>Exploring Colorado’s Hidden Trails</h3>
+                        <p class="meta">Drakshayani | July 10, 2025</p>
+                        <p>Uncover lesser-known trails in Colorado with stunning alpine views. Perfect for hikers seeking solitude and beauty.</p>
+                        <div class="tags">
+                            <a href="#">Trail Stories</a>
+                            <a href="#">Colorado</a>
+                        </div>
+                        <a href="#" class="cta">Read Post</a>
+                    </div>
+                </div>
+                <div class="blog-card">
+                    <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba" alt="Winter Hiking">
+                    <div class="blog-card-content">
+                        <h3>Winter Hiking: Staying Safe</h3>
+                        <p class="meta">Drakshayani | June 30, 2025</p>
+                        <p>Learn how to hike safely in winter with our guide to layering, gear, and trail preparation for cold conditions.</p>
+                        <div class="tags">
+                            <a href="#">Hiking Tips</a>
+                            <a href="#">Winter</a>
+                        </div>
+                        <a href="#" class="cta">Read Post</a>
+                    </div>
+                </div>
+                <div class="blog-card">
+                    <img src="https://images.unsplash.com/photo-1501555088652-021faa106b9b" alt="Multi-Day Hikes">
+                    <div class="blog-card-content">
+                        <h3>Packing for Multi-Day Hikes</h3>
+                        <p class="meta">Drakshayani | June 20, 2025</p>
+                        <p>Master the art of packing for extended hikes with our tips on lightweight gear and efficient organization.</p>
+                        <div class="tags">
+                            <a href="#">Hiking Tips</a>
+                            <a href="#">Backpacking</a>
+                        </div>
+                        <a href="#" class="cta">Read Post</a>
+                    </div>
+                </div>
+                <div class="blog-card">
+                    <img src="https://images.unsplash.com/photo-1518977822534-7049a61eeaca" alt="Rain Gear">
+                    <div class="blog-card-content">
+                        <h3>Best Rain Gear for Hikers</h3>
+                        <p class="meta">Drakshayani | June 15, 2025</p>
+                        <p>Stay dry on the trail with our top picks for waterproof jackets and accessories, tested in real conditions.</p>
+                        <div class="tags">
+                            <a href="#">Gear Reviews</a>
+                            <a href="#">Waterproof</a>
+                        </div>
+                        <a href="#" class="cta">Read Post</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="sidebar">
+            <h3>Popular Posts</h3>
+            <div class="related-post">
+                <img src="https://images.unsplash.com/photo-1471115853179-bb1d604434e0" alt="Beginner Guide">
+                <a href="#">Beginner’s Guide to Hiking</a>
+                <p>Essential tips for new hikers to start their journey.</p>
+            </div>
+            <div class="related-post">
+                <img src="https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0" alt="Zion Guide">
+                <a href="#">Top Trails in Zion National Park</a>
+                <p>Explore the best hikes in Zion with our expert guide.</p>
+            </div>
+            <div class="related-post">
+                <img src="https://images.unsplash.com/photo-1519098901909-b1553a1190af" alt="Layering Guide">
+                <a href="#">Layering for All-Weather Hikes</a>
+                <p>Stay comfortable with our clothing layering tips.</p>
+            </div>
+            <h3>Tags</h3>
+            <div class="tags">
+                <a href="#">Hiking Tips</a>
+                <a href="#">Gear Reviews</a>
+                <a href="#">Trail Stories</a>
+                <a href="#">Beginner</a>
+                <a href="#">Advanced</a>
+                <a href="#">National Parks</a>
+                <a href="#">Backpacking</a>
+                <a href="#">Waterproof</a>
+            </div>
+            <div class="author-bio">
+                <h3>About the Author</h3>
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb" alt="Author">
+                <p>Drakshayani is a passionate hiker and writer, sharing stories and tips from trails across the USA.</p>
+            </div>
+            <div class="testimonials">
+                <h3>Reader Comments</h3>
+                <div class="testimonial">
+                    <p>“The Yosemite tips made my trip unforgettable!”</p>
+                    <p class="meta">– Sarah L., August 5, 2025</p>
+                </div>
+                <div class="testimonial">
+                    <p>“Loved the rain gear guide – kept me dry!”</p>
+                    <p class="meta">– Mike T., July 28, 2025</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load More -->
+    <div class="load-more">
+        <button>Load More Posts</button>
+    </div>
+
+    <!-- Newsletter Signup -->
+    <section class="newsletter">
+        <div class="newsletter-content">
+            <h2>Stay Inspired</h2>
+            <form>
+                <input type="email" placeholder="Enter your email" required>
+                <button type="submit">Subscribe</button>
+            </form>
+            <p>Get weekly hiking stories, gear reviews, and adventure tips.</p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-column">
+                <h3>Quick Links</h3>
+                <a href="#">Home</a>
+                <a href="#">Routes</a>
+                <a href="#">Destinations</a>
+                <a href="#">Blog</a>
+                <a href="#">Privacy Policy</a>
+            </div>
+            <div class="footer-column">
+                <h3>About</h3>
+                <p>Adventurer Divine is your go-to resource for hiking in the USA.</p>
+                <p>Contact: info@adventurerdivine.com</p>
+            </div>
+            <div class="footer-column">
+                <h3>Follow Us</h3>
+                <div class="social-icons">
+                    <a href="#">Instagram</a>
+                    <a href="#">YouTube</a>
+                    <a href="#">Twitter</a>
+                </div>
+            </div>
+        </div>
+        <p style="margin-top: clamp(15px, 4vw, 20px);">&copy; 2025 Adventurer Divine. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Hamburger menu toggle
+        document.querySelector('.hamburger').addEventListener('click', () => {
+            document.querySelector('.nav-menu').classList.toggle('active');
+        });
+    </script>
+</body>
+</html>
